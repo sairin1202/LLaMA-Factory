@@ -65,3 +65,6 @@ def test_supervised(num_samples: int):
         templated_result = ref_tokenizer.apply_chat_template(messages, tokenize=False)
         decoded_result = tokenizer.decode(tokenized_data["input_ids"][index])
         assert templated_result == decoded_result
+
+
+
