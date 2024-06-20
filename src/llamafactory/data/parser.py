@@ -34,7 +34,7 @@ class DatasetAttr:
     """ basic configs """
     load_from: Literal["hf_hub", "ms_hub", "script", "file"]
     dataset_name: str
-    formatting: Literal["alpaca", "sharegpt", "character"] = "character"
+    formatting: Literal["alpaca", "sharegpt", "character"] = "alpaca"
     ranking: bool = False
     """ extra configs """
     subset: Optional[str] = None
