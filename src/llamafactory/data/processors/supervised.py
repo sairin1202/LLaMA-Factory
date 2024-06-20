@@ -88,8 +88,6 @@ def _encode_supervised_example(
             else:
                 assert False, f"Unknown mask label: {mask}"
 
-    else:
-        assert False, "Encoded pairs length == 0, or each pair have more than 3 elements"
 
     if template.efficient_eos:
         input_ids += [tokenizer.eos_token_id]
