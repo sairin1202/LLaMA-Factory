@@ -54,16 +54,42 @@ def _encode_supervised_example(
     encoded_pairs = template.encode_multiturn(
         tokenizer, messages, system, tools, data_args.cutoff_len, data_args.reserved_label_len
     )
-    for turn_idx, (source_ids, target_ids) in enumerate(encoded_pairs):
-        if data_args.train_on_prompt:
-            source_mask = source_ids
-        elif turn_idx != 0 and template.efficient_eos:
-            source_mask = [tokenizer.eos_token_id] + [IGNORE_INDEX] * (len(source_ids) - 1)
-        else:
-            source_mask = [IGNORE_INDEX] * len(source_ids)
 
-        input_ids += source_ids + target_ids
-        labels += source_mask + target_ids
+
+    if len(encoded_pairs) and len(encoded_pairs[0]) == 2:
+        for turn_idx, (source_ids, target_ids) in enumerate(encoded_pairs):
+            if data_args.train_on_prompt:
+                source_mask = source_ids
+            elif turn_idx != 0 and template.efficient_eos:
+                source_mask = [tokenizer.eos_token_id] + [IGNORE_INDEX] * (len(source_ids) - 1)
+            else:
+                source_mask = [IGNORE_INDEX] * len(source_ids)
+
+            input_ids += source_ids + target_ids
+            labels += source_mask + target_ids
+
+    elif len(encoded_pairs) and len(encoded_pairs[0]) == 3:
+        for turn_idx, (source_ids, target_ids, mask) in enumerate(encoded_pairs):
+            if data_args.train_on_prompt:
+                source_mask = source_ids
+            elif turn_idx != 0 and template.efficient_eos:
+                source_mask = [tokenizer.eos_token_id] + [IGNORE_INDEX] * (len(source_ids) - 1)
+            else:
+                source_mask = [IGNORE_INDEX] * len(source_ids)
+            print(mask)
+            if mask == "0":
+                target_mask = [IGNORE_INDEX] * len(target_ids)
+            
+            input_ids += source_ids + target_ids
+            if mask == "0":
+                labels += source_mask + target_mask
+            elif mask == "1":
+                labels += source_mask + target_ids
+            else:
+                assert False, f"Unknown mask label: {mask}"
+
+    else:
+        assert False, "Encoded pairs length == 0, or each pair have more than 3 elements"
 
     if template.efficient_eos:
         input_ids += [tokenizer.eos_token_id]

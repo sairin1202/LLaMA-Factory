@@ -101,6 +101,8 @@ class Template:
         """
         system = system or self.default_system
         encoded_messages = []
+        add_mask = "mask" in messages[0]
+
         for i, message in enumerate(messages):
             elements = []
 
@@ -125,9 +127,13 @@ class Template:
             else:
                 raise NotImplementedError("Unexpected role: {}".format(message["role"]))
 
-            encoded_messages.append(self._convert_elements_to_ids(tokenizer, elements))
-
-        return self._make_pairs(encoded_messages, cutoff_len, reserved_label_len)
+            if add_mask:
+                encoded_messages.append({'token': self._convert_elements_to_ids(tokenizer, elements), 'mask': message['mask']})
+        if add_mask:
+            return self._make_masked_pairs(encoded_messages, cutoff_len, reserved_label_len)
+        else:
+            return self._make_pairs(encoded_messages, cutoff_len, reserved_label_len)
+        
 
     def _convert_elements_to_ids(
         self, tokenizer: "PreTrainedTokenizer", elements: List[Union[str, Dict[str, str]]]
@@ -177,6 +183,32 @@ class Template:
 
         return encoded_pairs
 
+
+
+    def _make_masked_pairs(
+        self,
+        encoded_messages: Sequence[List[int]],
+        cutoff_len: int,
+        reserved_label_len: int,
+    ) -> Sequence[Tuple[List[int], List[int]]]:
+        encoded_pairs = []
+        total_length = 0
+        for i in range(0, len(encoded_messages), 2):
+            if total_length >= cutoff_len:
+                break
+
+            max_source_len, max_target_len = infer_max_len(
+                source_len=len(encoded_messages[i]['token']),
+                target_len=len(encoded_messages[i + 1]['token']),
+                max_len=(cutoff_len - total_length),
+                reserved_label_len=reserved_label_len,
+            )
+            mask = encoded_messages[i + 1]['mask']
+            source_ids = encoded_messages[i]['token'][:max_source_len]
+            target_ids = encoded_messages[i + 1]['token'][:max_target_len]
+            total_length += len(source_ids) + len(target_ids)
+            encoded_pairs.append((source_ids, target_ids, mask))
+        return encoded_pairs
 
 @dataclass
 class Llama2Template(Template):
