@@ -55,7 +55,6 @@ def _encode_supervised_example(
         tokenizer, messages, system, tools, data_args.cutoff_len, data_args.reserved_label_len
     )
 
-
     if len(encoded_pairs) and len(encoded_pairs[0]) == 2:
         for turn_idx, (source_ids, target_ids) in enumerate(encoded_pairs):
             if data_args.train_on_prompt:

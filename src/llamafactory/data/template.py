@@ -129,6 +129,9 @@ class Template:
 
             if add_mask:
                 encoded_messages.append({'token': self._convert_elements_to_ids(tokenizer, elements), 'mask': message['mask']})
+            else:
+                encoded_messages.append(self._convert_elements_to_ids(tokenizer, elements))
+
         if add_mask:
             return self._make_masked_pairs(encoded_messages, cutoff_len, reserved_label_len)
         else:
@@ -228,6 +231,7 @@ class Llama2Template(Template):
         """
         system = system or self.default_system
         encoded_messages = []
+
         for i, message in enumerate(messages):
             elements = []
 

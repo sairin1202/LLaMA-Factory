@@ -64,7 +64,6 @@ def get_preprocess_and_print_func(
                 processor=processor,
                 data_args=data_args,
             )
-
         print_function = partial(print_supervised_dataset_example, tokenizer=tokenizer)
     elif stage == "rm":
         preprocess_func = partial(
