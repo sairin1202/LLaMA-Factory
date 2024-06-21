@@ -67,25 +67,34 @@ def _encode_supervised_example(
             input_ids += source_ids + target_ids
             labels += source_mask + target_ids
 
-    elif len(encoded_pairs) and len(encoded_pairs[0]) == 3:
-        for turn_idx, (source_ids, target_ids, mask) in enumerate(encoded_pairs):
+    elif len(encoded_pairs) and len(encoded_pairs[0]) == 4:
+        for turn_idx, (source_ids, target_ids, is_source_mask, is_target_mask) in enumerate(encoded_pairs):
             if data_args.train_on_prompt:
                 source_mask = source_ids
             elif turn_idx != 0 and template.efficient_eos:
                 source_mask = [tokenizer.eos_token_id] + [IGNORE_INDEX] * (len(source_ids) - 1)
             else:
                 source_mask = [IGNORE_INDEX] * len(source_ids)
-            print(mask)
-            if mask == "0":
+            # print(mask)
+            if is_source_mask == '0':
+                source_mask = [IGNORE_INDEX] * len(source_ids)
+            if is_target_mask == "0":
                 target_mask = [IGNORE_INDEX] * len(target_ids)
             
             input_ids += source_ids + target_ids
-            if mask == "0":
-                labels += source_mask + target_mask
-            elif mask == "1":
-                labels += source_mask + target_ids
+            if is_source_mask == "0":
+                labels += source_mask
+            elif is_source_mask == "1":
+                labels += source_ids
             else:
-                assert False, f"Unknown mask label: {mask}"
+                assert False, "is_source_mask is not either 0 or 1"
+
+            if is_target_mask == "0":
+                labels += target_mask
+            elif is_target_mask == "1":
+                labels += target_ids
+            else:
+                assert False, "is_target_mask is not either 0 or 1"
 
 
     if template.efficient_eos:

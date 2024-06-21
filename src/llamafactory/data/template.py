@@ -206,11 +206,12 @@ class Template:
                 max_len=(cutoff_len - total_length),
                 reserved_label_len=reserved_label_len,
             )
-            mask = encoded_messages[i + 1]['mask']
+            is_source_mask = encoded_messages[i]['mask']
+            is_target_mask = encoded_messages[i + 1]['mask']
             source_ids = encoded_messages[i]['token'][:max_source_len]
             target_ids = encoded_messages[i + 1]['token'][:max_target_len]
             total_length += len(source_ids) + len(target_ids)
-            encoded_pairs.append((source_ids, target_ids, mask))
+            encoded_pairs.append((source_ids, target_ids, is_source_mask, is_target_mask))
         return encoded_pairs
 
 @dataclass
@@ -850,6 +851,17 @@ _register_template(
     replace_eos=True,
 )
 
+
+_register_template(
+    name="qwen_character",
+    format_user=StringFormatter(slots=["<|im_start|>{{role}}\n{{content}}<|im_end|>\n<|im_start|>\n"]),
+    format_system=StringFormatter(slots=["<|im_start|>system\n{{content}}<|im_end|>\n"]),
+    format_observation=StringFormatter(slots=["<|im_start|>tool\n{{content}}<|im_end|>\n<|im_start|>assistant\n"]),
+    format_separator=EmptyFormatter(slots=["\n"]),
+    default_system="You are a helpful assistant.",
+    stop_words=["<|im_end|>"],
+    replace_eos=True,
+)
 
 _register_template(
     name="solar",
