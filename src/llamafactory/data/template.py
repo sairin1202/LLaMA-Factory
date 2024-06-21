@@ -854,9 +854,9 @@ _register_template(
 
 _register_template(
     name="qwen_character",
-    format_user=StringFormatter(slots=["<|im_start|>{{role}}\n{{content}}<|im_end|>\n<|im_start|>\n"]),
+    format_user=StringFormatter(slots=["<|im_start|>{{role}}\n{{content}}<|im_end|>\n<|im_start|>"]),
     format_system=StringFormatter(slots=["<|im_start|>system\n{{content}}<|im_end|>\n"]),
-    format_observation=StringFormatter(slots=["<|im_start|>tool\n{{content}}<|im_end|>\n<|im_start|>assistant\n"]),
+    format_observation=StringFormatter(slots=["<|im_start|>tool\n{{content}}<|im_end|>\n<|im_start|>"]),
     format_separator=EmptyFormatter(slots=["\n"]),
     default_system="You are a helpful assistant.",
     stop_words=["<|im_end|>"],
