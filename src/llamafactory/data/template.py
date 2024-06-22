@@ -16,7 +16,7 @@ from dataclasses import dataclass
 from typing import TYPE_CHECKING, Dict, List, Optional, Sequence, Tuple, Union
 
 from ..extras.logging import get_logger
-from .data_utils import Role, infer_max_len
+from .data_utils import Role, infer_max_len, infer_groupchat_max_len
 from .formatter import EmptyFormatter, FunctionFormatter, StringFormatter, ToolFormatter
 
 
@@ -44,6 +44,7 @@ class Template:
     image_token: str
     efficient_eos: bool
     replace_eos: bool
+    groupchat: bool = False
 
     def encode_oneturn(
         self,
@@ -73,11 +74,12 @@ class Template:
         tools: Optional[str] = None,
         cutoff_len: int = 1_000_000,
         reserved_label_len: int = 1,
+        groupchat: bool=False,
     ) -> Sequence[Tuple[List[int], List[int]]]:
         r"""
         Returns multiple pairs of token ids representing prompts and responses respectively.
         """
-        return self._encode(tokenizer, messages, system, tools, cutoff_len, reserved_label_len)
+        return self._encode(tokenizer, messages, system, tools, cutoff_len, reserved_label_len, groupchat)
 
     def extract_tool(self, content: str) -> Union[str, List[Tuple[str, str]]]:
         r"""
@@ -93,6 +95,7 @@ class Template:
         tools: Optional[str],
         cutoff_len: int,
         reserved_label_len: int,
+        groupchat: bool=False
     ) -> Sequence[Tuple[List[int], List[int]]]:
         r"""
         Encodes formatted inputs to pairs of token ids.
@@ -116,6 +119,7 @@ class Template:
             if i > 0 and i % 2 == 0:
                 elements += self.format_separator.apply()
 
+            # Todo: change it into multiturn group chat training
             if message["role"] == Role.USER.value:
                 elements += self.format_user.apply(content=message["content"], idx=str(i // 2))
             elif message["role"] == Role.ASSISTANT.value:
@@ -125,14 +129,16 @@ class Template:
             elif message["role"] == Role.FUNCTION.value:
                 elements += self.format_function.apply(content=message["content"])
             else:
-                raise NotImplementedError("Unexpected role: {}".format(message["role"]))
+                elements += self.format_user.apply(content=message["content"], role=message["role"])
 
             if add_mask:
                 encoded_messages.append({'token': self._convert_elements_to_ids(tokenizer, elements), 'mask': message['mask']})
             else:
                 encoded_messages.append(self._convert_elements_to_ids(tokenizer, elements))
 
-        if add_mask:
+        if groupchat:
+            return self._make_groupchat_pairs(encoded_messages, cutoff_len, reserved_label_len)
+        elif add_mask:
             return self._make_masked_pairs(encoded_messages, cutoff_len, reserved_label_len)
         else:
             return self._make_pairs(encoded_messages, cutoff_len, reserved_label_len)
@@ -213,6 +219,32 @@ class Template:
             total_length += len(source_ids) + len(target_ids)
             encoded_pairs.append((source_ids, target_ids, is_source_mask, is_target_mask))
         return encoded_pairs
+    
+
+    def _make_groupchat_pairs(
+        self,
+        encoded_messages: Sequence[List[int]],
+        cutoff_len: int,
+        reserved_label_len: int,
+    ) -> Sequence[Tuple[List[int], List[int]]]:
+        encoded_pairs = []
+        total_length = 0
+        for i in range(0, len(encoded_messages), 2):
+            if total_length >= cutoff_len:
+                break
+
+            max_source_len = infer_groupchat_max_len(
+                source_len=len(encoded_messages[i]['token']),
+                max_len=(cutoff_len - total_length),
+                reserved_label_len=reserved_label_len,
+            )
+            is_source_mask = encoded_messages[i]['mask']
+            source_ids = encoded_messages[i]['token'][:max_source_len]
+            total_length += len(source_ids)
+            encoded_pairs.append((source_ids, is_source_mask, None)) # make the length 3 to discrinimate from other two types encoded pairs
+        return encoded_pairs
+
+
 
 @dataclass
 class Llama2Template(Template):
@@ -281,6 +313,7 @@ def _register_template(
     image_token: str = "<image>",
     efficient_eos: bool = False,
     replace_eos: bool = False,
+    groupchat: bool = False,
 ) -> None:
     r"""
     Registers a chat template.
@@ -332,6 +365,7 @@ def _register_template(
         image_token=image_token,
         efficient_eos=efficient_eos,
         replace_eos=replace_eos,
+        groupchat=groupchat,
     )
 
 
@@ -853,14 +887,15 @@ _register_template(
 
 
 _register_template(
-    name="qwen_character",
-    format_user=StringFormatter(slots=["<|im_start|>{{role}}\n{{content}}<|im_end|>\n<|im_start|>"]),
+    name="qwen_groupchat",
+    format_user=StringFormatter(slots=["<|im_start|>{{role}}\n{{content}}<|im_end|>\n"]),
     format_system=StringFormatter(slots=["<|im_start|>system\n{{content}}<|im_end|>\n"]),
-    format_observation=StringFormatter(slots=["<|im_start|>tool\n{{content}}<|im_end|>\n<|im_start|>"]),
+    format_observation=StringFormatter(slots=["<|im_start|>tool\n{{content}}<|im_end|>\n"]),
     format_separator=EmptyFormatter(slots=["\n"]),
     default_system="",
     stop_words=["<|im_end|>"],
     replace_eos=True,
+    groupchat=True,
 )
 
 _register_template(

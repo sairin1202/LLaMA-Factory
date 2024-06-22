@@ -46,6 +46,10 @@ def infer_max_len(source_len: int, target_len: int, max_len: int, reserved_label
     max_source_len = max_len - min(max_target_len, target_len)
     return max_source_len, max_target_len
 
+def infer_groupchat_max_len(source_len: int, max_len: int, reserved_label_len: int) -> Tuple[int, int]:
+    return max_len
+
+
 
 def merge_dataset(
     all_datasets: List[Union["Dataset", "IterableDataset"]],
