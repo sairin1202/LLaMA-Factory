@@ -225,7 +225,7 @@ def preprocess_supervised_dataset(
             logger.warning("Dropped invalid example: {}".format(examples["prompt"][i] + examples["response"][i]))
             continue
         
-        if Template.groupchat:
+        if template.groupchat:
             input_ids, labels = _encode_supervised_groupchat_example(
                 prompt=examples["prompt"][i],
                 system=examples["system"][i],
