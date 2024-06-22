@@ -67,6 +67,28 @@ def _encode_supervised_example(
             input_ids += source_ids + target_ids
             labels += source_mask + target_ids
 
+    # groupchat
+    elif len(encoded_pairs) and len(encoded_pairs[0]) == 3:
+        for turn_idx, (source_ids, is_source_mask, _) in enumerate(encoded_pairs):
+            if data_args.train_on_prompt:
+                source_mask = source_ids
+            elif turn_idx != 0 and template.efficient_eos:
+                source_mask = [tokenizer.eos_token_id] + [IGNORE_INDEX] * (len(source_ids) - 1)
+            else:
+                source_mask = [IGNORE_INDEX] * len(source_ids)
+            # print(mask)
+            if is_source_mask == '0':
+                source_mask = [IGNORE_INDEX] * len(source_ids)
+            
+            input_ids += source_ids
+            if is_source_mask == "0":
+                labels += source_mask
+            elif is_source_mask == "1":
+                labels += source_ids
+            else:
+                assert False, "is_source_mask is not either 0 or 1"
+
+
     elif len(encoded_pairs) and len(encoded_pairs[0]) == 4:
         for turn_idx, (source_ids, target_ids, is_source_mask, is_target_mask) in enumerate(encoded_pairs):
             if data_args.train_on_prompt:
@@ -128,7 +150,7 @@ def _encode_supervised_groupchat_example(
         labels += [IGNORE_INDEX] * getattr(processor, "image_seq_length")
 
     encoded_pairs = template.encode_multiturn(
-        tokenizer, messages, system, tools, data_args.cutoff_len, data_args.reserved_label_len
+        tokenizer, messages, system, tools, data_args.cutoff_len, data_args.reserved_label_len, groupchat=True
     )
 
     if len(encoded_pairs) and len(encoded_pairs[0]) == 2:
