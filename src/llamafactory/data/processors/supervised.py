@@ -104,6 +104,85 @@ def _encode_supervised_example(
     return input_ids, labels
 
 
+
+
+
+def _encode_supervised_groupchat_example(
+    prompt: Sequence[Dict[str, str]],
+    system: Optional[str],
+    tools: Optional[str],
+    template: "Template",
+    tokenizer: "PreTrainedTokenizer",
+    processor: Optional["ProcessorMixin"],
+    data_args: "DataArguments",
+) -> Tuple[List[int], List[int]]:
+    if processor is not None and not hasattr(processor, "image_seq_length"):  # llava-like models
+        prompt[0]["content"] = template.image_token + prompt[0]["content"]
+
+    messages = prompt
+    input_ids, labels = [], []
+
+    if processor is not None and hasattr(processor, "image_seq_length"):  # paligemma models
+        image_token_id = tokenizer.convert_tokens_to_ids(template.image_token)
+        input_ids += [image_token_id] * getattr(processor, "image_seq_length")
+        labels += [IGNORE_INDEX] * getattr(processor, "image_seq_length")
+
+    encoded_pairs = template.encode_multiturn(
+        tokenizer, messages, system, tools, data_args.cutoff_len, data_args.reserved_label_len
+    )
+
+    if len(encoded_pairs) and len(encoded_pairs[0]) == 2:
+        for turn_idx, (source_ids, target_ids) in enumerate(encoded_pairs):
+            if data_args.train_on_prompt:
+                source_mask = source_ids
+            elif turn_idx != 0 and template.efficient_eos:
+                source_mask = [tokenizer.eos_token_id] + [IGNORE_INDEX] * (len(source_ids) - 1)
+            else:
+                source_mask = [IGNORE_INDEX] * len(source_ids)
+
+            input_ids += source_ids + target_ids
+            labels += source_mask + target_ids
+
+    elif len(encoded_pairs) and len(encoded_pairs[0]) == 4:
+        for turn_idx, (source_ids, target_ids, is_source_mask, is_target_mask) in enumerate(encoded_pairs):
+            if data_args.train_on_prompt:
+                source_mask = source_ids
+            elif turn_idx != 0 and template.efficient_eos:
+                source_mask = [tokenizer.eos_token_id] + [IGNORE_INDEX] * (len(source_ids) - 1)
+            else:
+                source_mask = [IGNORE_INDEX] * len(source_ids)
+            # print(mask)
+            if is_source_mask == '0':
+                source_mask = [IGNORE_INDEX] * len(source_ids)
+            if is_target_mask == "0":
+                target_mask = [IGNORE_INDEX] * len(target_ids)
+            
+            input_ids += source_ids + target_ids
+            if is_source_mask == "0":
+                labels += source_mask
+            elif is_source_mask == "1":
+                labels += source_ids
+            else:
+                assert False, "is_source_mask is not either 0 or 1"
+
+            if is_target_mask == "0":
+                labels += target_mask
+            elif is_target_mask == "1":
+                labels += target_ids
+            else:
+                assert False, "is_target_mask is not either 0 or 1"
+
+
+    if template.efficient_eos:
+        input_ids += [tokenizer.eos_token_id]
+        labels += [tokenizer.eos_token_id]
+
+    return input_ids, labels
+
+
+
+
+
 def preprocess_supervised_dataset(
     examples: Dict[str, List[Any]],
     template: "Template",
@@ -123,17 +202,28 @@ def preprocess_supervised_dataset(
         if len(examples["prompt"][i]) % 2 != 1 or len(examples["response"][i]) != 1:
             logger.warning("Dropped invalid example: {}".format(examples["prompt"][i] + examples["response"][i]))
             continue
-
-        input_ids, labels = _encode_supervised_example(
-            prompt=examples["prompt"][i],
-            response=examples["response"][i],
-            system=examples["system"][i],
-            tools=examples["tools"][i],
-            template=template,
-            tokenizer=tokenizer,
-            processor=processor,
-            data_args=data_args,
-        )
+        
+        if Template.groupchat:
+            input_ids, labels = _encode_supervised_groupchat_example(
+                prompt=examples["prompt"][i],
+                system=examples["system"][i],
+                tools=examples["tools"][i],
+                template=template,
+                tokenizer=tokenizer,
+                processor=processor,
+                data_args=data_args,
+            )
+        else:
+            input_ids, labels = _encode_supervised_example(
+                prompt=examples["prompt"][i],
+                response=examples["response"][i],
+                system=examples["system"][i],
+                tools=examples["tools"][i],
+                template=template,
+                tokenizer=tokenizer,
+                processor=processor,
+                data_args=data_args,
+            )
         model_inputs["input_ids"].append(input_ids)
         model_inputs["attention_mask"].append([1] * len(input_ids))
         model_inputs["labels"].append(labels)
