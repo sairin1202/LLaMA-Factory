@@ -116,7 +116,8 @@ class Template:
                 tool_text = self.format_tools.apply(content=tools)[0] if tools else ""
                 elements += self.format_system.apply(content=(system + tool_text))
 
-            if i > 0 and i % 2 == 0:
+
+            if i > 0 and i % 2 == 0 and not groupchat:
                 elements += self.format_separator.apply()
 
             # Todo: change it into multiturn group chat training
@@ -130,12 +131,14 @@ class Template:
                 elements += self.format_observation.apply(content=message["content"])
             elif message["role"] == Role.FUNCTION.value:
                 elements += self.format_function.apply(content=message["content"])
-
+            print('elements:', elements)
 
             if add_mask:
                 encoded_messages.append({'token': self._convert_elements_to_ids(tokenizer, elements), 'mask': message['mask']})
             else:
                 encoded_messages.append(self._convert_elements_to_ids(tokenizer, elements))
+
+            
 
         if groupchat:
             return self._make_groupchat_pairs(encoded_messages, cutoff_len, reserved_label_len)
@@ -239,6 +242,7 @@ class Template:
                 max_len=(cutoff_len - total_length),
                 reserved_label_len=reserved_label_len,
             )
+
             is_source_mask = encoded_messages[i]['mask']
             source_ids = encoded_messages[i]['token'][:max_source_len]
             total_length += len(source_ids)

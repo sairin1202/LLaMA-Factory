@@ -104,6 +104,7 @@ class CustomSeq2SeqTrainer(Seq2SeqTrainer):
         loss, generated_tokens, _ = super().prediction_step(  # ignore the returned labels (may be truncated)
             model, inputs, prediction_loss_only=prediction_loss_only, ignore_keys=ignore_keys
         )
+
         if generated_tokens is not None and self.args.predict_with_generate:
             generated_tokens[:, :prompt_len] = self.tokenizer.pad_token_id
             generated_tokens = generated_tokens.contiguous()

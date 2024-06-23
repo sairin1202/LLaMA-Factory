@@ -177,10 +177,13 @@ def _encode_supervised_groupchat_example(
         assert False, "encoded_pairs is not 3 elements"
 
 
+
     if template.efficient_eos:
         input_ids += [tokenizer.eos_token_id]
         labels += [tokenizer.eos_token_id]
 
+    # print('input ids:', input_ids, len(input_ids))
+    # print('labels:', labels, len(labels))
     return input_ids, labels
 
 
@@ -232,6 +235,8 @@ def preprocess_supervised_dataset(
         model_inputs["input_ids"].append(input_ids)
         model_inputs["attention_mask"].append([1] * len(input_ids))
         model_inputs["labels"].append(labels)
+        # print('input:', input_ids)
+        # print('label:', labels)
         if processor is not None:
             model_inputs["pixel_values"].append(get_pixel_values(examples["images"][i], processor))
             if hasattr(processor, "image_seq_length"):  # paligemma models
