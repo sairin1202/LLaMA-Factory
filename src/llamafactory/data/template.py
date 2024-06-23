@@ -120,7 +120,9 @@ class Template:
                 elements += self.format_separator.apply()
 
             # Todo: change it into multiturn group chat training
-            if message["role"] == Role.USER.value:
+            if groupchat:
+                elements += self.format_user.apply(content=message["content"], role=message["role"])
+            elif message["role"] == Role.USER.value:
                 elements += self.format_user.apply(content=message["content"], idx=str(i // 2))
             elif message["role"] == Role.ASSISTANT.value:
                 elements += self.format_assistant.apply(content=message["content"])
@@ -128,8 +130,7 @@ class Template:
                 elements += self.format_observation.apply(content=message["content"])
             elif message["role"] == Role.FUNCTION.value:
                 elements += self.format_function.apply(content=message["content"])
-            else:
-                elements += self.format_user.apply(content=message["content"], role=message["role"])
+
 
             if add_mask:
                 encoded_messages.append({'token': self._convert_elements_to_ids(tokenizer, elements), 'mask': message['mask']})
@@ -229,7 +230,7 @@ class Template:
     ) -> Sequence[Tuple[List[int], List[int]]]:
         encoded_pairs = []
         total_length = 0
-        for i in range(0, len(encoded_messages), 2):
+        for i in range(0, len(encoded_messages), 1):
             if total_length >= cutoff_len:
                 break
 
