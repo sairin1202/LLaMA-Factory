@@ -131,7 +131,7 @@ class Template:
                 elements += self.format_observation.apply(content=message["content"])
             elif message["role"] == Role.FUNCTION.value:
                 elements += self.format_function.apply(content=message["content"])
-            print('elements:', elements)
+            # print('elements:', elements)
 
             if add_mask:
                 encoded_messages.append({'token': self._convert_elements_to_ids(tokenizer, elements), 'mask': message['mask']})
