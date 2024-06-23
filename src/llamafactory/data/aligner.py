@@ -292,13 +292,14 @@ def align_dataset(
         assert False, f"Unknown dataset formatting, {dataset_attr.formatting}"
 
     column_names = list(next(iter(dataset)).keys())
+    
     features = Features.from_dict(
         {
             "prompt": [
-                {"role": {"dtype": "string", "_type": "Value"}, "content": {"dtype": "string", "_type": "Value"}, "mask": {"dtype": "string", "_type": "Value"}}
+                {"role": {"dtype": "string", "_type": "Value"}, "content": {"dtype": "string", "_type": "Value"}, "mask": {"dtype": "string", "_type": "Value", "optional": True}}
             ],
             "response": [
-                {"role": {"dtype": "string", "_type": "Value"}, "content": {"dtype": "string", "_type": "Value"}, "mask": {"dtype": "string", "_type": "Value"}}
+                {"role": {"dtype": "string", "_type": "Value"}, "content": {"dtype": "string", "_type": "Value"}, "mask": {"dtype": "string", "_type": "Value", "optional": True}}
             ],
             "system": {"dtype": "string", "_type": "Value"},
             "tools": {"dtype": "string", "_type": "Value"},
