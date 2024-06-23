@@ -163,3 +163,4 @@ cython_debug/
 user.config
 saves/
 cache/
+data/qwen_groupchat_jp.json

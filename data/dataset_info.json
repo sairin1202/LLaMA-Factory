@@ -1,4 +1,19 @@
 {
+  "qwen_groupchat": {
+    "file_name": "qwen_groupchat_jp.json",
+    "formatting": "groupchat",
+    "columns": {
+      "messages": "messages"
+    },
+    "tags": {
+      "role_tag": "role",
+      "content_tag": "content",
+      "user_tag": "user",
+      "assistant_tag": "assistant",
+      "mask_tag": "mask",
+      "system_tag": "system"
+    }
+  },
   "identity": {
     "file_name": "identity.json"
   },

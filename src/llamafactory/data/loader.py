@@ -187,7 +187,6 @@ def get_dataset(
                 load_from_cache_file=(not data_args.overwrite_cache) or (training_args.local_process_index != 0),
                 desc="Running tokenizer on dataset",
             )
-
         dataset = dataset.map(preprocess_func, batched=True, remove_columns=column_names, **kwargs)
 
         if data_args.tokenized_path is not None:

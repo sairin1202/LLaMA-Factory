@@ -190,11 +190,11 @@ def convert_sharegpt(
 
 
 
-def convert_character(
+def convert_groupchat(
     examples: Dict[str, List[Any]], dataset_attr: "DatasetAttr", data_args: "DataArguments"
 ) -> Dict[str, List[Any]]:
     r"""
-    Converts character format dataset to the standard format.
+    Converts groupchat format dataset to the standard format.
     """
     outputs = {"prompt": [], "response": [], "system": [], "tools": [], "images": []}
     convert_images = partial(_convert_images, dataset_attr=dataset_attr, data_args=data_args)
@@ -252,8 +252,8 @@ def convert_character(
                 {"role": tag_mapping[rejected[dataset_attr.role_tag]], "content": rejected[dataset_attr.content_tag]},
             ]
         else:  # normal example
-            prompt = aligned_messages[:-1]
-            response = aligned_messages[-1:]
+            prompt = aligned_messages
+            response = aligned_messages
 
         if broken_data:
             logger.warning("Skipping this abnormal example.")
@@ -284,19 +284,21 @@ def align_dataset(
     """
     if dataset_attr.formatting == "alpaca":
         convert_func = partial(convert_alpaca, dataset_attr=dataset_attr, data_args=data_args)
-    elif dataset_attr.formatting == "character":
-        convert_func = partial(convert_character, dataset_attr=dataset_attr, data_args=data_args)
-    else:
+    elif "groupchat" in dataset_attr.formatting:
+        convert_func = partial(convert_groupchat, dataset_attr=dataset_attr, data_args=data_args)
+    elif dataset_attr.formatting == "sharegpt":
         convert_func = partial(convert_sharegpt, dataset_attr=dataset_attr, data_args=data_args)
+    else:
+        assert False, f"Unknown dataset formatting, {dataset_attr.formatting}"
 
     column_names = list(next(iter(dataset)).keys())
     features = Features.from_dict(
         {
             "prompt": [
-                {"role": {"dtype": "string", "_type": "Value"}, "content": {"dtype": "string", "_type": "Value"}}
+                {"role": {"dtype": "string", "_type": "Value"}, "content": {"dtype": "string", "_type": "Value"}, "mask": {"dtype": "string", "_type": "Value"}}
             ],
             "response": [
-                {"role": {"dtype": "string", "_type": "Value"}, "content": {"dtype": "string", "_type": "Value"}}
+                {"role": {"dtype": "string", "_type": "Value"}, "content": {"dtype": "string", "_type": "Value"}, "mask": {"dtype": "string", "_type": "Value"}}
             ],
             "system": {"dtype": "string", "_type": "Value"},
             "tools": {"dtype": "string", "_type": "Value"},

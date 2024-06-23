@@ -34,7 +34,7 @@ class DatasetAttr:
     """ basic configs """
     load_from: Literal["hf_hub", "ms_hub", "script", "file"]
     dataset_name: str
-    formatting: Literal["alpaca", "sharegpt", "character"] = "alpaca"
+    formatting: Literal["alpaca", "sharegpt", "groupchat"] = "alpaca"
     ranking: bool = False
     """ extra configs """
     subset: Optional[str] = None
@@ -63,6 +63,7 @@ class DatasetAttr:
     observation_tag: Optional[str] = "observation"
     function_tag: Optional[str] = "function_call"
     system_tag: Optional[str] = "system"
+    mask_tag: Optional[str] = "mask"
 
     def __repr__(self) -> str:
         return self.dataset_name
@@ -145,7 +146,7 @@ def get_dataset_list(data_args: "DataArguments") -> List["DatasetAttr"]:
             )
             for tag in tag_names:
                 dataset_attr.set_attr(tag, dataset_info[name]["tags"])
-        elif dataset_attr.formatting == "character" and "tags" in dataset_info[name]:
+        elif 'groupchat' in dataset_attr.formatting and "tags" in dataset_info[name]:
             tag_names = (
                 "role_tag",
                 "content_tag",

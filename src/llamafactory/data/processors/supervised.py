@@ -221,9 +221,10 @@ def preprocess_supervised_dataset(
             model_inputs["token_type_ids"] = []
 
     for i in range(len(examples["prompt"])):
-        if len(examples["prompt"][i]) % 2 != 1 or len(examples["response"][i]) != 1:
-            logger.warning("Dropped invalid example: {}".format(examples["prompt"][i] + examples["response"][i]))
-            continue
+
+        # if len(examples["prompt"][i]) % 2 != 1 or len(examples["response"][i]) != 1:
+        #     logger.warning("Dropped invalid example: {}".format(examples["prompt"][i] + examples["response"][i]))
+        #     continue
         
         if template.groupchat:
             input_ids, labels = _encode_supervised_groupchat_example(
