@@ -293,19 +293,34 @@ def align_dataset(
 
     column_names = list(next(iter(dataset)).keys())
     
-    features = Features.from_dict(
-        {
-            "prompt": [
-                {"role": {"dtype": "string", "_type": "Value"}, "content": {"dtype": "string", "_type": "Value"}, "mask": {"dtype": "string", "_type": "Value", "optional": True}}
-            ],
-            "response": [
-                {"role": {"dtype": "string", "_type": "Value"}, "content": {"dtype": "string", "_type": "Value"}, "mask": {"dtype": "string", "_type": "Value", "optional": True}}
-            ],
-            "system": {"dtype": "string", "_type": "Value"},
-            "tools": {"dtype": "string", "_type": "Value"},
-            "images": [{"_type": "Image"}],
-        }
-    )
+    if data_args.train_mask:
+        features = Features.from_dict(
+            {
+                "prompt": [
+                    {"role": {"dtype": "string", "_type": "Value"}, "content": {"dtype": "string", "_type": "Value"}, "mask": {"dtype": "string", "_type": "Value", "optional": True}}
+                ],
+                "response": [
+                    {"role": {"dtype": "string", "_type": "Value"}, "content": {"dtype": "string", "_type": "Value"}, "mask": {"dtype": "string", "_type": "Value", "optional": True}}
+                ],
+                "system": {"dtype": "string", "_type": "Value"},
+                "tools": {"dtype": "string", "_type": "Value"},
+                "images": [{"_type": "Image"}],
+            }
+        )
+    else:
+        features = Features.from_dict(
+            {
+                "prompt": [
+                    {"role": {"dtype": "string", "_type": "Value"}, "content": {"dtype": "string", "_type": "Value"}}
+                ],
+                "response": [
+                    {"role": {"dtype": "string", "_type": "Value"}, "content": {"dtype": "string", "_type": "Value"}}
+                ],
+                "system": {"dtype": "string", "_type": "Value"},
+                "tools": {"dtype": "string", "_type": "Value"},
+                "images": [{"_type": "Image"}],
+            }
+        )
     kwargs = {}
     if not data_args.streaming:
         kwargs = dict(

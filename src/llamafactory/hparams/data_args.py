@@ -105,6 +105,12 @@ class DataArguments:
         default=None,
         metadata={"help": "Path to save or load the tokenized datasets."},
     )
+    train_mask: Optional[bool] = field(
+        default=None,
+        metadata={
+            "help": "has mask or not"
+        },
+    )
 
     def __post_init__(self):
         if self.reserved_label_len >= self.cutoff_len:
